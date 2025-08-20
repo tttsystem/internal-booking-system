@@ -31,7 +31,7 @@ const InternalBookingSystem = () => {
     '2025-09-23', '2025-10-13', '2025-11-03', '2025-11-23',
   ];
 
-  const CALENDAR_DATABASE_ID = process.env.REACT_APP_NOTION_DATABASE_ID || '1fa44ae2d2c780a5b27dc7aae5bae1aa';
+  const CALENDAR_DATABASE_ID = process.env.REACT_APP_NOTION_DATABASE_ID || '1f344ae2d2c7804994e3ec2a11bb3f79';
 
   const getCurrentWeekDates = () => {
     const today = new Date();
