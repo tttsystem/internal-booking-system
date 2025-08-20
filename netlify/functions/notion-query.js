@@ -4,6 +4,11 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    console.log('Query Environment check:', {
+      hasToken: !!process.env.NOTION_TOKEN,
+      tokenPrefix: process.env.NOTION_TOKEN ? process.env.NOTION_TOKEN.substring(0, 10) + '...' : 'undefined'
+    });
+    
     const { databaseId, filter } = JSON.parse(event.body);
     
     const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
