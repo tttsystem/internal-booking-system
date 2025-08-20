@@ -70,6 +70,7 @@ const InternalBookingSystem = () => {
   // Notionユーザーを取得
   const fetchNotionUsers = async () => {
     try {
+      console.log('ユーザー取得開始...');
       const response = await fetch('/.netlify/functions/notion-users', {
         method: 'GET',
         headers: {
@@ -78,11 +79,13 @@ const InternalBookingSystem = () => {
       });
 
       if (!response.ok) {
+        console.error('Response not OK:', response.status, response.statusText);
         throw new Error('Notion Users APIエラー');
       }
 
       const data = await response.json();
-      console.log('Notionから取得したユーザー:', data.results);
+      console.log('Notionから取得したユーザー:', data);
+      console.log('ユーザー数:', data.results?.length || 0);
       setNotionUsers(data.results || []);
 
     } catch (error) {
