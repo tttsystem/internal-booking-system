@@ -84,9 +84,16 @@ const InternalBookingSystem = () => {
       }
 
       const data = await response.json();
-      console.log('Notionから取得したユーザー:', data);
-      console.log('ユーザー数:', data.results?.length || 0);
-      setNotionUsers(data.results || []);
+      console.log('ユーザーAPI 完全レスポンス:', JSON.stringify(data, null, 2));
+      console.log('data.results:', data.results);
+      console.log('data直下のプロパティ:', Object.keys(data));
+      
+      // レスポンス構造を確認してユーザーデータを取得
+      const users = data.results || data.data || data;
+      console.log('実際のユーザーデータ:', users);
+      console.log('ユーザー数:', Array.isArray(users) ? users.length : 0);
+      
+      setNotionUsers(Array.isArray(users) ? users : []);
 
     } catch (error) {
       console.error('Notionユーザーの取得に失敗:', error);
@@ -127,9 +134,14 @@ const InternalBookingSystem = () => {
       }
 
       const data = await response.json();
-      console.log('Notionから取得したイベント:', data.results);
+      console.log('カレンダーAPI 完全レスポンス:', JSON.stringify(data, null, 2));
+      console.log('data.results:', data.results);
+      console.log('data直下のプロパティ:', Object.keys(data));
       
-      data.results?.forEach(event => {
+      const events = data.results || data.data || [];
+      console.log('実際のイベントデータ:', events);
+      
+      events?.forEach(event => {
         const eventName = event.properties['予定名']?.title?.[0]?.text?.content || '名前なし';
         const eventStart = event.properties['日付']?.date?.start;
         const eventEnd = event.properties['日付']?.date?.end;
@@ -145,7 +157,7 @@ const InternalBookingSystem = () => {
         }
       });
       
-      setNotionEvents(data.results || []);
+      setNotionEvents(events || []);
 
     } catch (error) {
       console.error('Notionカレンダーの取得に失敗:', error);
