@@ -119,7 +119,7 @@ const InternalBookingSystem = () => {
         body: JSON.stringify({
           databaseId: CALENDAR_DATABASE_ID,
           filter: {
-            property: '日付',
+            property: '予定日',
             date: {
               on_or_after: datesForQuery[0].toISOString().split('T')[0],
               on_or_before: datesForQuery[4].toISOString().split('T')[0]
@@ -141,9 +141,9 @@ const InternalBookingSystem = () => {
       console.log('実際のイベントデータ:', events);
       
       events?.forEach(event => {
-        const eventName = event.properties['予定名']?.title?.[0]?.text?.content || '名前なし';
-        const eventStart = event.properties['日付']?.date?.start;
-        const eventEnd = event.properties['日付']?.date?.end;
+        const eventName = event.properties['名前']?.title?.[0]?.text?.content || '名前なし';
+        const eventStart = event.properties['予定日']?.date?.start;
+        const eventEnd = event.properties['予定日']?.date?.end;
         
         if (eventStart) {
           const start = new Date(eventStart);
@@ -171,7 +171,7 @@ const InternalBookingSystem = () => {
   const createNotionEvent = async (bookingData) => {
     try {
       const properties = {
-        '予定名': {
+        '名前': {
           title: [
             {
               text: {
@@ -180,7 +180,7 @@ const InternalBookingSystem = () => {
             }
           ]
         },
-        '日付': {
+        '予定日': {
           date: {
             start: `${bookingData.date}T${bookingData.time}:00+09:00`,
             end: `${bookingData.date}T${String(parseInt(bookingData.time.split(':')[0]) + 1).padStart(2, '0')}:00+09:00`
@@ -280,8 +280,8 @@ const InternalBookingSystem = () => {
     const slotEnd = new Date(`${dateString}T${String(timeHour + 1).padStart(2, '0')}:00+09:00`);
     
     const hasNotionEvent = notionEvents.some(event => {
-      const eventStart = event.properties['日付']?.date?.start;
-      const eventEnd = event.properties['日付']?.date?.end;
+      const eventStart = event.properties['予定日']?.date?.start;
+      const eventEnd = event.properties['予定日']?.date?.end;
       
       if (!eventStart) return false;
       
