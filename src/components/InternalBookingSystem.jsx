@@ -102,6 +102,9 @@ const InternalBookingSystem = () => {
       
       const datesForQuery = targetWeekDates || weekDates;
       
+      console.log('使用するデータベースID:', CALENDAR_DATABASE_ID);
+      console.log('クエリ日付範囲:', datesForQuery[0].toISOString().split('T')[0], '〜', datesForQuery[4].toISOString().split('T')[0]);
+      
       const response = await fetch('/.netlify/functions/notion-query', {
         method: 'POST',
         headers: {
