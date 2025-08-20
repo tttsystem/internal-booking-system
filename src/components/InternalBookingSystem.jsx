@@ -88,7 +88,6 @@ const InternalBookingSystem = () => {
       console.log('data.results:', data.results);
       console.log('data直下のプロパティ:', Object.keys(data));
       
-      // レスポンス構造を確認してユーザーデータを取得
       const users = data.results || data.data || data;
       console.log('実際のユーザーデータ:', users);
       console.log('ユーザー数:', Array.isArray(users) ? users.length : 0);
