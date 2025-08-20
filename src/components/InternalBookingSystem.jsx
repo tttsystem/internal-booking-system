@@ -243,10 +243,17 @@ const InternalBookingSystem = () => {
 
   useEffect(() => {
     if (weekDates && weekDates.length > 0 && isInitialLoading) {
-      Promise.all([
-        fetchNotionCalendar(false),
-        fetchNotionUsers()
-      ]);
+      const fetchData = async () => {
+        try {
+          await Promise.all([
+            fetchNotionCalendar(false),
+            fetchNotionUsers()
+          ]);
+        } catch (error) {
+          console.error('初期データ取得エラー:', error);
+        }
+      };
+      fetchData();
     }
   }, [weekDates, isInitialLoading, fetchNotionCalendar]);
 
