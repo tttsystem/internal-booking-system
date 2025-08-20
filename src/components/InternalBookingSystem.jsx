@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 const InternalBookingSystem = () => {
   const [selectedDate, setSelectedDate] = useState(null);
@@ -91,7 +91,7 @@ const InternalBookingSystem = () => {
     }
   };
 
-  const fetchNotionCalendar = async (isWeekChange = false, targetWeekDates = null) => {
+  const fetchNotionCalendar = useCallback(async (isWeekChange = false, targetWeekDates = null) => {
     try {
       setIsLoading(true);
       if (isWeekChange) {
@@ -152,7 +152,7 @@ const InternalBookingSystem = () => {
       setIsInitialLoading(false);
       setIsWeekChanging(false);
     }
-  };
+  }, [weekDates, isInitialLoading]);
 
   const createNotionEvent = async (bookingData) => {
     try {
@@ -245,7 +245,7 @@ const InternalBookingSystem = () => {
         fetchNotionUsers()
       ]);
     }
-  }, [weekDates, isInitialLoading]);
+  }, [weekDates, isInitialLoading, fetchNotionCalendar]);
 
   const getBookingStatus = (date, time) => {
     if (isHoliday(date)) {
