@@ -166,7 +166,7 @@ const InternalBookingSystem = () => {
       setIsInitialLoading(false);
       setIsWeekChanging(false);
     }
-  }, [weekDates, isInitialLoading]);
+  }, [weekDates, isInitialLoading, CALENDAR_DATABASE_ID]);
 
   const createNotionEvent = async (bookingData) => {
     try {
