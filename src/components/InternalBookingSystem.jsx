@@ -6,12 +6,12 @@ const InternalBookingSystem = () => {
   const [bookingData, setBookingData] = useState({});
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [eventTitle, setEventTitle] = useState('');
-  // 固定ユーザーID（元システムと同じ）
-  const FIXED_USER_ID = '1ffd872b-594c-8107-b306-000269021f07';
+  const [selectedUser, setSelectedUser] = useState('');
   const [weekOffset, setWeekOffset] = useState(0);
   const [showTimeSlots, setShowTimeSlots] = useState(false);
   
   const [notionEvents, setNotionEvents] = useState([]);
+  const [notionUsers, setNotionUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isWeekChanging, setIsWeekChanging] = useState(false);
@@ -67,6 +67,29 @@ const InternalBookingSystem = () => {
   const weekDates = getCurrentWeekDates();
   const timeSlots = generateTimeSlots(settings.startHour, settings.endHour);
 
+  // Notionユーザーを取得（PHPコードと同じAPI呼び出し）
+  const fetchNotionUsers = async () => {
+    try {
+      const response = await fetch('/.netlify/functions/notion-users', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Notion Users APIエラー');
+      }
+
+      const data = await response.json();
+      console.log('Notionユーザー取得成功:', data);
+      setNotionUsers(data.results || []);
+
+    } catch (error) {
+      console.error('Notionユーザーの取得に失敗:', error);
+      setNotionUsers([]);
+    }
+  };
 
   const fetchNotionCalendar = useCallback(async (isWeekChange = false, targetWeekDates = null) => {
     try {
@@ -157,14 +180,14 @@ const InternalBookingSystem = () => {
         '担当': {
           people: [
             {
-              id: FIXED_USER_ID
+              id: bookingData.userId
             }
           ]
         },
         'ユーザー': {
           people: [
             {
-              id: FIXED_USER_ID
+              id: bookingData.userId
             }
           ]
         }
@@ -222,7 +245,17 @@ const InternalBookingSystem = () => {
 
   useEffect(() => {
     if (weekDates && weekDates.length > 0 && isInitialLoading) {
-      fetchNotionCalendar(false);
+      const fetchData = async () => {
+        try {
+          await Promise.all([
+            fetchNotionCalendar(false),
+            fetchNotionUsers()
+          ]);
+        } catch (error) {
+          console.error('初期データ取得エラー:', error);
+        }
+      };
+      fetchData();
     }
   }, [weekDates, isInitialLoading, fetchNotionCalendar]);
 
@@ -324,7 +357,7 @@ const InternalBookingSystem = () => {
         date: selectedDate.toISOString().split('T')[0],
         time: selectedTime,
         eventTitle: eventTitle,
-        userId: FIXED_USER_ID
+        userId: selectedUser
       };
       
       const success = await createNotionEvent(bookingDataObj);
@@ -673,6 +706,25 @@ const InternalBookingSystem = () => {
                   />
                 </div>
 
+                <div>
+                  <label className="block text-gray-700 font-bold mb-3 flex items-center">
+                    <i className="fas fa-user mr-2 text-blue-500"></i>
+                    担当者 <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <select
+                    value={selectedUser}
+                    onChange={(e) => setSelectedUser(e.target.value)}
+                    className="w-full p-4 rounded-xl border-2 border-blue-200 focus:border-blue-500 focus:outline-none transition-all duration-300 text-lg bg-white/80 backdrop-blur"
+                    required
+                  >
+                    <option value="">担当者を選択してください</option>
+                    {notionUsers.filter(user => user.type === 'person').map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.name || user.person?.email || 'Unknown User'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
                 <div className="flex space-x-4">
                   <button
@@ -684,7 +736,7 @@ const InternalBookingSystem = () => {
                   </button>
                   <button
                     onClick={handleBooking}
-                    disabled={!eventTitle.trim() || isLoading}
+                    disabled={!eventTitle.trim() || !selectedUser || isLoading}
                     className="flex-1 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-lg shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform transition-all duration-300 hover:scale-105 disabled:hover:scale-100"
                   >
                     {isLoading ? (
