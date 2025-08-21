@@ -32,6 +32,7 @@ const InternalBookingSystem = () => {
   ];
 
   const CALENDAR_DATABASE_ID = process.env.REACT_APP_NOTION_DATABASE_ID || '1f344ae2d2c7804994e3ec2a11bb3f79';
+  const CALENDAR_VIEW_ID = '1f344ae2d2c781d9a969000c0484830c';
 
   const getCurrentWeekDates = () => {
     const today = new Date();
@@ -76,7 +77,8 @@ const InternalBookingSystem = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          databaseId: CALENDAR_DATABASE_ID
+          databaseId: CALENDAR_DATABASE_ID,
+          viewId: CALENDAR_VIEW_ID
         })
       });
 

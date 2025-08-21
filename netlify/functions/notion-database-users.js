@@ -4,7 +4,10 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { databaseId } = JSON.parse(event.body);
+    const { databaseId, viewId } = JSON.parse(event.body);
+    
+    console.log('Database ID:', databaseId);
+    console.log('View ID:', viewId);
     
     // データベースの情報を取得してユーザープロパティから参加者を抽出
     const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}`, {
@@ -158,7 +161,8 @@ exports.handler = async (event, context) => {
           allUserNames: debugInfo.allUserNames,
           recordUsers: debugInfo.recordUsers,
           workspaceUsers: debugInfo.workspaceUsers,
-          sampleRecords: debugInfo.sampleRecords
+          sampleRecords: debugInfo.sampleRecords,
+          viewId: viewId
         }
       })
     };
