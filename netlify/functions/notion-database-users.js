@@ -32,8 +32,36 @@ exports.handler = async (event, context) => {
       };
     }
     
-    // 今週のレコードからのみユーザーを取得
+    // レコードからユーザーIDを取得し、ワークスペースAPIで詳細を補完
+    const recordUserIds = new Set();
     const userMap = new Map();
+    
+    // まずワークスペースの全ユーザー情報を取得
+    const usersResponse = await fetch('https://api.notion.com/v1/users', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${process.env.NOTION_TOKEN}`,
+        'Content-Type': 'application/json',
+        'Notion-Version': '2022-06-28',
+      }
+    });
+    
+    const usersData = await usersResponse.json();
+    const allWorkspaceUsers = new Map();
+    
+    if (usersData.results) {
+      usersData.results.forEach(user => {
+        if (user.type === 'person') {
+          allWorkspaceUsers.set(user.id, {
+            id: user.id,
+            name: user.name,
+            avatar_url: user.avatar_url,
+            type: user.type,
+            person: user.person
+          });
+        }
+      });
+    }
 
     // 全期間のレコードを取得
     let allRecords = [];
@@ -100,12 +128,12 @@ exports.handler = async (event, context) => {
               debugInfo.allUserNames.push(user.name);
               debugInfo.recordUsers.push(user.name);
               
-              // レコードにいるユーザーを更新
-              if (userMap.has(user.id)) {
-                userMap.set(user.id, {
-                  ...userMap.get(user.id),
-                  inRecords: true
-                });
+              // レコードにいるユーザーIDを記録
+              recordUserIds.add(user.id);
+              
+              // ワークスペースユーザー情報とマッチんグ
+              if (allWorkspaceUsers.has(user.id)) {
+                userMap.set(user.id, allWorkspaceUsers.get(user.id));
               }
             });
           }
@@ -134,7 +162,8 @@ exports.handler = async (event, context) => {
           foundProperties: Array.from(debugInfo.foundProperties),
           allUserNames: debugInfo.allUserNames,
           recordUsers: debugInfo.recordUsers,
-          workspaceUsers: debugInfo.workspaceUsers,
+          workspaceUsers: Array.from(allWorkspaceUsers.values()).map(u => u.name),
+          recordUserIds: Array.from(recordUserIds),
           sampleRecords: debugInfo.sampleRecords,
           viewId: viewId,
           dateRange: '全期間'
