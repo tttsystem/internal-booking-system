@@ -29,12 +29,20 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // ユーザープロパティから参加者を取得
-    const userProperty = dbData.properties['ユーザー'] || dbData.properties['担当'];
+    // データベースから全レコードを取得してユーザー情報を収集
+    let allRecords = [];
+    let hasMore = true;
+    let nextCursor = undefined;
     
-    let users = [];
-    if (userProperty && userProperty.type === 'people') {
-      // データベースから実際のレコードを取得してユーザー情報を収集
+    // ページネーションで全レコードを取得
+    while (hasMore) {
+      const queryBody = {
+        page_size: 100
+      };
+      if (nextCursor) {
+        queryBody.start_cursor = nextCursor;
+      }
+      
       const queryResponse = await fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
         method: 'POST',
         headers: {
@@ -42,34 +50,49 @@ exports.handler = async (event, context) => {
           'Content-Type': 'application/json',
           'Notion-Version': '2022-06-28',
         },
-        body: JSON.stringify({})
+        body: JSON.stringify(queryBody)
       });
 
       const queryData = await queryResponse.json();
       
-      if (queryData.results) {
-        const userMap = new Map();
-        
-        queryData.results.forEach(record => {
-          const userProp = record.properties['ユーザー'] || record.properties['担当'];
-          if (userProp && userProp.people) {
-            userProp.people.forEach(user => {
-              if (!userMap.has(user.id)) {
-                userMap.set(user.id, {
-                  id: user.id,
-                  name: user.name,
-                  avatar_url: user.avatar_url,
-                  type: user.type,
-                  person: user.person
-                });
-              }
-            });
-          }
-        });
-        
-        users = Array.from(userMap.values());
+      if (queryData.object === 'error') {
+        break;
       }
+      
+      if (queryData.results) {
+        allRecords = allRecords.concat(queryData.results);
+      }
+      
+      hasMore = queryData.has_more;
+      nextCursor = queryData.next_cursor;
     }
+    
+    // 全レコードからユーザー情報を抽出
+    const userMap = new Map();
+    
+    allRecords.forEach(record => {
+      // 複数のプロパティからユーザーを検索
+      const possibleUserProps = ['ユーザー', '担当', 'User', 'Assignee', 'People'];
+      
+      possibleUserProps.forEach(propName => {
+        const userProp = record.properties[propName];
+        if (userProp && userProp.people) {
+          userProp.people.forEach(user => {
+            if (!userMap.has(user.id)) {
+              userMap.set(user.id, {
+                id: user.id,
+                name: user.name,
+                avatar_url: user.avatar_url,
+                type: user.type,
+                person: user.person
+              });
+            }
+          });
+        }
+      });
+    });
+    
+    const users = Array.from(userMap.values());
     
     return {
       statusCode: 200,
@@ -80,7 +103,9 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({
         object: 'list',
         results: users,
-        has_more: false
+        has_more: false,
+        total_records: allRecords.length,
+        total_users: users.length
       })
     };
   } catch (error) {
