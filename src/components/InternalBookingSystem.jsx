@@ -67,21 +67,18 @@ const InternalBookingSystem = () => {
   const weekDates = getCurrentWeekDates();
   const timeSlots = generateTimeSlots(settings.startHour, settings.endHour);
 
-  // データベースの参加者を取得
+  // ワークスペースの全ユーザーを取得
   const fetchNotionUsers = useCallback(async () => {
     try {
-      const response = await fetch('/.netlify/functions/notion-database-users', {
-        method: 'POST',
+      const response = await fetch('/.netlify/functions/notion-users', {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          databaseId: CALENDAR_DATABASE_ID
-        })
+        }
       });
 
       if (!response.ok) {
-        throw new Error('Notion Database Users APIエラー');
+        throw new Error('Notion Users APIエラー');
       }
 
       const data = await response.json();
@@ -92,20 +89,17 @@ const InternalBookingSystem = () => {
         throw new Error(data.message || 'Notion APIエラー');
       }
       
-      console.log('データベース参加者取得成功:', data);
+      console.log('ワークスペースユーザー取得成功:', data);
       console.log('✨ 取得したユーザー一覧:', data.results?.map(u => u.name) || []);
-      console.log('📊 デバッグ情報:', data.debug);
-      if (data.debug?.allUserNames) {
-        console.log('👥 全ユーザー名:', data.debug.allUserNames);
-        console.log('🔍 奥野翔也さんは含まれている？', data.debug.allUserNames.includes('奥野翔也'));
-      }
+      const userNames = data.results?.map(u => u.name) || [];
+      console.log('🔍 奥野翔也さんは含まれている？', userNames.includes('奥野翔也'));
       setNotionUsers(data.results || []);
 
     } catch (error) {
-      console.error('データベース参加者の取得に失敗:', error);
+      console.error('ワークスペースユーザーの取得に失敗:', error);
       setNotionUsers([]);
     }
-  }, [CALENDAR_DATABASE_ID]);
+  }, []);
 
   const fetchNotionCalendar = useCallback(async (isWeekChange = false, targetWeekDates = null) => {
     try {
