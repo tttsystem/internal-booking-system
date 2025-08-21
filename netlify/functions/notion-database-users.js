@@ -35,19 +35,24 @@ exports.handler = async (event, context) => {
     
     if (data.results) {
       data.results.forEach(record => {
-        const userProp = record.properties['ユーザー'];
-        if (userProp && userProp.people) {
-          userProp.people.forEach(user => {
-            if (!userMap.has(user.id)) {
-              userMap.set(user.id, {
-                id: user.id,
-                name: user.name,
-                avatar_url: user.avatar_url,
-                type: user.type,
-                person: user.person
-              });
-            }
-          });
+        // 複数のプロパティ名を試す（ユーザーが入力される可能性のある全プロパティ）
+        const possibleUserProps = ['ユーザー', '担当', 'User', 'Assigned', '責任者', '参加者', 'メンバー'];
+        
+        for (const propName of possibleUserProps) {
+          const userProp = record.properties[propName];
+          if (userProp && userProp.people) {
+            userProp.people.forEach(user => {
+              if (!userMap.has(user.id)) {
+                userMap.set(user.id, {
+                  id: user.id,
+                  name: user.name,
+                  avatar_url: user.avatar_url,
+                  type: user.type,
+                  person: user.person
+                });
+              }
+            });
+          }
         }
       });
     }
