@@ -28,6 +28,35 @@ exports.handler = async (event, context) => {
         body: JSON.stringify(dbData)
       };
     }
+    
+    // データベースのプロパティからユーザー情報を取得
+    const userMap = new Map();
+    
+    // ワークスペースの全ユーザーを取得
+    const usersResponse = await fetch('https://api.notion.com/v1/users', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${process.env.NOTION_TOKEN}`,
+        'Content-Type': 'application/json',
+        'Notion-Version': '2022-06-28',
+      }
+    });
+    
+    const usersData = await usersResponse.json();
+    
+    if (usersData.results) {
+      usersData.results.forEach(user => {
+        if (user.type === 'person') {
+          userMap.set(user.id, {
+            id: user.id,
+            name: user.name,
+            avatar_url: user.avatar_url,
+            type: user.type,
+            person: user.person
+          });
+        }
+      });
+    }
 
     // データベースから全レコードを取得してユーザー情報を収集
     let allRecords = [];
@@ -67,12 +96,13 @@ exports.handler = async (event, context) => {
       nextCursor = queryData.next_cursor;
     }
     
-    // 全レコードからユーザー情報を抽出
-    const userMap = new Map();
+    // データベースのレコードからもユーザーを抽出(以前に作った人)
     const debugInfo = {
       totalRecords: allRecords.length,
       foundProperties: new Set(),
       allUserNames: [],
+      recordUsers: [],
+      workspaceUsers: Array.from(userMap.values()).map(u => u.name),
       sampleRecords: allRecords.slice(0, 3).map(r => ({
         id: r.id,
         properties: Object.keys(r.properties)
@@ -91,14 +121,13 @@ exports.handler = async (event, context) => {
           if (userProp.people) {
             userProp.people.forEach(user => {
               debugInfo.allUserNames.push(user.name);
+              debugInfo.recordUsers.push(user.name);
               
-              if (!userMap.has(user.id)) {
+              // レコードにいるユーザーを更新
+              if (userMap.has(user.id)) {
                 userMap.set(user.id, {
-                  id: user.id,
-                  name: user.name,
-                  avatar_url: user.avatar_url,
-                  type: user.type,
-                  person: user.person
+                  ...userMap.get(user.id),
+                  inRecords: true
                 });
               }
             });
@@ -127,6 +156,8 @@ exports.handler = async (event, context) => {
         debug: {
           foundProperties: Array.from(debugInfo.foundProperties),
           allUserNames: debugInfo.allUserNames,
+          recordUsers: debugInfo.recordUsers,
+          workspaceUsers: debugInfo.workspaceUsers,
           sampleRecords: debugInfo.sampleRecords
         }
       })
