@@ -69,30 +69,48 @@ exports.handler = async (event, context) => {
     
     // 全レコードからユーザー情報を抽出
     const userMap = new Map();
+    const debugInfo = {
+      totalRecords: allRecords.length,
+      foundProperties: new Set(),
+      allUserNames: [],
+      sampleRecords: allRecords.slice(0, 3).map(r => ({
+        id: r.id,
+        properties: Object.keys(r.properties)
+      }))
+    };
     
-    allRecords.forEach(record => {
+    allRecords.forEach((record, recordIndex) => {
       // 複数のプロパティからユーザーを検索
-      const possibleUserProps = ['ユーザー', '担当', 'User', 'Assignee', 'People'];
+      const possibleUserProps = ['ユーザー', '担当', 'User', 'Assignee', 'People', 'メンバー', 'Member'];
       
       possibleUserProps.forEach(propName => {
         const userProp = record.properties[propName];
-        if (userProp && userProp.people) {
-          userProp.people.forEach(user => {
-            if (!userMap.has(user.id)) {
-              userMap.set(user.id, {
-                id: user.id,
-                name: user.name,
-                avatar_url: user.avatar_url,
-                type: user.type,
-                person: user.person
-              });
-            }
-          });
+        if (userProp) {
+          debugInfo.foundProperties.add(`${propName} (${userProp.type})`);
+          
+          if (userProp.people) {
+            userProp.people.forEach(user => {
+              debugInfo.allUserNames.push(user.name);
+              
+              if (!userMap.has(user.id)) {
+                userMap.set(user.id, {
+                  id: user.id,
+                  name: user.name,
+                  avatar_url: user.avatar_url,
+                  type: user.type,
+                  person: user.person
+                });
+              }
+            });
+          }
         }
       });
     });
     
     const users = Array.from(userMap.values());
+    
+    console.log('Debug Info:', JSON.stringify(debugInfo, null, 2));
+    console.log('Found users:', users.map(u => u.name));
     
     return {
       statusCode: 200,
@@ -105,7 +123,12 @@ exports.handler = async (event, context) => {
         results: users,
         has_more: false,
         total_records: allRecords.length,
-        total_users: users.length
+        total_users: users.length,
+        debug: {
+          foundProperties: Array.from(debugInfo.foundProperties),
+          allUserNames: debugInfo.allUserNames,
+          sampleRecords: debugInfo.sampleRecords
+        }
       })
     };
   } catch (error) {
