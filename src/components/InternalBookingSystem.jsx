@@ -70,7 +70,7 @@ const InternalBookingSystem = () => {
   // データベースの参加者を取得
   const fetchNotionUsers = useCallback(async () => {
     try {
-      const response = await fetch('/.netlify/functions/notion-database-specific-users', {
+      const response = await fetch('/.netlify/functions/notion-database-users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
