@@ -82,6 +82,13 @@ const InternalBookingSystem = () => {
       }
 
       const data = await response.json();
+      
+      // APIエラーチェック
+      if (data.object === 'error') {
+        console.error('Notion APIエラー:', data);
+        throw new Error(data.message || 'Notion APIエラー');
+      }
+      
       console.log('Notionユーザー取得成功:', data);
       setNotionUsers(data.results || []);
 
@@ -127,6 +134,15 @@ const InternalBookingSystem = () => {
       }
 
       const data = await response.json();
+      
+      // APIエラーチェック
+      if (data.object === 'error') {
+        console.error('Notion カレンダーAPIエラー:', data);
+        console.error('エラーメッセージ:', data.message);
+        console.error('使用したデータベースID:', CALENDAR_DATABASE_ID);
+        throw new Error(data.message || 'Notion カレンダーAPIエラー');
+      }
+      
       console.log('カレンダーAPI 完全レスポンス:', JSON.stringify(data, null, 2));
       console.log('data.results:', data.results);
       console.log('data直下のプロパティ:', Object.keys(data));

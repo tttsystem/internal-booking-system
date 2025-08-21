@@ -11,6 +11,9 @@ exports.handler = async (event, context) => {
     
     const { databaseId, filter } = JSON.parse(event.body);
     
+    console.log('Querying database:', databaseId);
+    console.log('With filter:', JSON.stringify(filter));
+    
     const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
       method: 'POST',
       headers: {
@@ -22,6 +25,8 @@ exports.handler = async (event, context) => {
     });
 
     const data = await response.json();
+    console.log('Response status:', response.status);
+    console.log('Response data:', JSON.stringify(data));
     
     return {
       statusCode: 200,

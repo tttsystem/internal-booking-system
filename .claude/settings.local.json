@@ -10,7 +10,8 @@
       "Bash(npm run build:*)",
       "Bash(npm start)",
       "Bash(npm install:*)",
-      "Bash(netlify dev:*)"
+      "Bash(netlify dev:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []
