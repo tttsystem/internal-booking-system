@@ -9,6 +9,7 @@ const InternalBookingSystem = () => {
   const [selectedUser, setSelectedUser] = useState('');
   const [weekOffset, setWeekOffset] = useState(0);
   const [showTimeSlots, setShowTimeSlots] = useState(false);
+  const [enableReminder, setEnableReminder] = useState(true); // デフォルトでリマインダーON
   
   const [notionEvents, setNotionEvents] = useState([]);
   const [notionUsers, setNotionUsers] = useState([]);
@@ -184,6 +185,10 @@ const InternalBookingSystem = () => {
 
   const createNotionEvent = async (bookingData) => {
     try {
+      // 開始時刻の10分前のリマインダー時刻を計算
+      const startDateTime = new Date(`${bookingData.date}T${bookingData.time}:00+09:00`);
+      const reminderDateTime = new Date(startDateTime.getTime() - 10 * 60 * 1000); // 10分前
+      
       const properties = {
         '予定名': {
           title: [
@@ -216,6 +221,16 @@ const InternalBookingSystem = () => {
           ]
         }
       };
+      
+      // リマインダープロパティがある場合は追加（Notionデータベースにリマインダープロパティを作成する必要がある）
+      if (bookingData.enableReminder) {
+        properties['リマインダー'] = {
+          date: {
+            start: reminderDateTime.toISOString(),
+            time_zone: 'Asia/Tokyo'
+          }
+        };
+      }
 
       const response = await fetch('/.netlify/functions/notion-create', {
         method: 'POST',
@@ -381,7 +396,8 @@ const InternalBookingSystem = () => {
         date: selectedDate.toISOString().split('T')[0],
         time: selectedTime,
         eventTitle: eventTitle,
-        userId: selectedUser
+        userId: selectedUser,
+        enableReminder: enableReminder
       };
       
       const success = await createNotionEvent(bookingDataObj);
@@ -399,6 +415,7 @@ const InternalBookingSystem = () => {
         setSelectedTime(null);
         setEventTitle('');
         setSelectedUser('');
+        setEnableReminder(true);
         
         alert('予約が完了しました！');
         await fetchNotionCalendar();
@@ -748,6 +765,21 @@ const InternalBookingSystem = () => {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div>
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={enableReminder}
+                      onChange={(e) => setEnableReminder(e.target.checked)}
+                      className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-gray-700 font-medium flex items-center">
+                      <i className="fas fa-bell mr-2 text-blue-500"></i>
+                      10分前にリマインド通知を送る
+                    </span>
+                  </label>
                 </div>
 
                 <div className="flex space-x-4">
