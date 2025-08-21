@@ -93,6 +93,12 @@ const InternalBookingSystem = () => {
       }
       
       console.log('データベース参加者取得成功:', data);
+      console.log('✨ 取得したユーザー一覧:', data.results?.map(u => u.name) || []);
+      console.log('📊 デバッグ情報:', data.debug);
+      if (data.debug?.allUserNames) {
+        console.log('👥 全ユーザー名:', data.debug.allUserNames);
+        console.log('🔍 奥野翔也さんは含まれている？', data.debug.allUserNames.includes('奥野翔也'));
+      }
       setNotionUsers(data.results || []);
 
     } catch (error) {
