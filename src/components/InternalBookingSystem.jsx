@@ -67,18 +67,21 @@ const InternalBookingSystem = () => {
   const weekDates = getCurrentWeekDates();
   const timeSlots = generateTimeSlots(settings.startHour, settings.endHour);
 
-  // Notionユーザーを取得（PHPコードと同じAPI呼び出し）
+  // データベースの参加者を取得
   const fetchNotionUsers = async () => {
     try {
-      const response = await fetch('/.netlify/functions/notion-users', {
-        method: 'GET',
+      const response = await fetch('/.netlify/functions/notion-database-users', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-        }
+        },
+        body: JSON.stringify({
+          databaseId: CALENDAR_DATABASE_ID
+        })
       });
 
       if (!response.ok) {
-        throw new Error('Notion Users APIエラー');
+        throw new Error('Notion Database Users APIエラー');
       }
 
       const data = await response.json();
@@ -89,11 +92,11 @@ const InternalBookingSystem = () => {
         throw new Error(data.message || 'Notion APIエラー');
       }
       
-      console.log('Notionユーザー取得成功:', data);
+      console.log('データベース参加者取得成功:', data);
       setNotionUsers(data.results || []);
 
     } catch (error) {
-      console.error('Notionユーザーの取得に失敗:', error);
+      console.error('データベース参加者の取得に失敗:', error);
       setNotionUsers([]);
     }
   };
