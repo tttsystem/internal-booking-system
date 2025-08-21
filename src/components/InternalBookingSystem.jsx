@@ -68,7 +68,7 @@ const InternalBookingSystem = () => {
   const timeSlots = generateTimeSlots(settings.startHour, settings.endHour);
 
   // データベースの参加者を取得
-  const fetchNotionUsers = async () => {
+  const fetchNotionUsers = useCallback(async () => {
     try {
       const response = await fetch('/.netlify/functions/notion-database-users', {
         method: 'POST',
@@ -99,7 +99,7 @@ const InternalBookingSystem = () => {
       console.error('データベース参加者の取得に失敗:', error);
       setNotionUsers([]);
     }
-  };
+  }, [CALENDAR_DATABASE_ID]);
 
   const fetchNotionCalendar = useCallback(async (isWeekChange = false, targetWeekDates = null) => {
     try {
@@ -279,7 +279,7 @@ const InternalBookingSystem = () => {
       };
       fetchData();
     }
-  }, [weekDates, isInitialLoading, fetchNotionCalendar]);
+  }, [weekDates, isInitialLoading, fetchNotionCalendar, fetchNotionUsers]);
 
   const getBookingStatus = (date, time) => {
     if (isHoliday(date)) {
