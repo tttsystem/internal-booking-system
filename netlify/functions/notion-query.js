@@ -4,18 +4,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    console.log('Query Environment check:', {
-      hasToken: !!process.env.NOTION_TOKEN,
-      tokenPrefix: process.env.NOTION_TOKEN ? process.env.NOTION_TOKEN.substring(0, 20) + '...' : 'undefined',
-      tokenLength: process.env.NOTION_TOKEN ? process.env.NOTION_TOKEN.length : 0,
-      allEnvVars: Object.keys(process.env).filter(key => key.includes('NOTION')),
-      fullToken: process.env.NOTION_TOKEN // デバッグ用
-    });
-    
     const { databaseId, filter } = JSON.parse(event.body);
-    
-    console.log('Querying database:', databaseId);
-    console.log('With filter:', JSON.stringify(filter));
     
     const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
       method: 'POST',
@@ -28,8 +17,6 @@ exports.handler = async (event, context) => {
     });
 
     const data = await response.json();
-    console.log('Response status:', response.status);
-    console.log('Response data:', JSON.stringify(data));
     
     return {
       statusCode: 200,
