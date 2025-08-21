@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Notion API チェック</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        pre { background: #f0f0f0; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Notion API 接続テスト</h1>
+    <div id="results"></div>
+
+    <script>
+        const NOTION_TOKEN = 'secret_TYiWCjqURBKUDVWxBvQYeibrcfQFYJa2H12VbzRwDXXL1bG';
+        const DATABASE_ID = '1f344ae2d2c7804994e3ec2a11bb3f79';
+        const results = document.getElementById('results');
+
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = message;
+            results.appendChild(div);
+        }
+
+        function logPre(data) {
+            const pre = document.createElement('pre');
+            pre.textContent = JSON.stringify(data, null, 2);
+            results.appendChild(pre);
+        }
+
+        async function testAPI() {
+            log('=== Notion API 直接テスト (ブラウザから) ===');
+            log('Database ID: ' + DATABASE_ID);
+            log('Token prefix: ' + NOTION_TOKEN.substring(0, 20) + '...');
+            
+            // Netlify Functions経由でテスト
+            log('\n=== Netlify Functions 経由のテスト ===');
+            
+            try {
+                log('1. ユーザー取得 API:');
+                const userRes = await fetch('/.netlify/functions/notion-users');
+                const userData = await userRes.json();
+                
+                if (userData.object === 'error') {
+                    log('✗ エラー: ' + userData.message, 'error');
+                    logPre(userData);
+                } else if (userData.results) {
+                    log('✓ 成功! ユーザー数: ' + userData.results.length, 'success');
+                    log('ユーザー一覧:', 'info');
+                    userData.results.forEach(user => {
+                        log('  - ' + user.name + ' (ID: ' + user.id + ')');
+                    });
+                } else {
+                    log('✗ 予期しないレスポンス', 'error');
+                    logPre(userData);
+                }
+            } catch (error) {
+                log('✗ ユーザー取得エラー: ' + error.message, 'error');
+            }
+
+            try {
+                log('\n2. カレンダー取得 API:');
+                const calRes = await fetch('/.netlify/functions/notion-query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        databaseId: DATABASE_ID,
+                        filter: {}
+                    })
+                });
+                const calData = await calRes.json();
+                
+                if (calData.object === 'error') {
+                    log('✗ エラー: ' + calData.message, 'error');
+                    logPre(calData);
+                } else if (calData.results) {
+                    log('✓ 成功! イベント数: ' + calData.results.length, 'success');
+                    if (calData.results.length > 0) {
+                        log('最初のイベント:', 'info');
+                        logPre(calData.results[0]);
+                    }
+                } else {
+                    log('✗ 予期しないレスポンス', 'error');
+                    logPre(calData);
+                }
+            } catch (error) {
+                log('✗ カレンダー取得エラー: ' + error.message, 'error');
+            }
+
+            // 既存のbooking-appのエンドポイントをテスト
+            log('\n=== 既存システム (booking-app) のテスト ===');
+            try {
+                const oldSystemRes = await fetch('https://netlify-notion-bookings.netlify.app/.netlify/functions/notion-query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        databaseId: DATABASE_ID,
+                        filter: {}
+                    })
+                });
+                const oldData = await oldSystemRes.json();
+                
+                if (oldData.object === 'error') {
+                    log('✗ 既存システムもエラー: ' + oldData.message, 'error');
+                } else if (oldData.results) {
+                    log('✓ 既存システムは成功! イベント数: ' + oldData.results.length, 'success');
+                }
+            } catch (error) {
+                log('既存システムに接続できません: ' + error.message, 'info');
+            }
+        }
+
+        testAPI();
+    </script>
+</body>
+</html>
