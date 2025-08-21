@@ -6,7 +6,10 @@ exports.handler = async (event, context) => {
   try {
     console.log('Query Environment check:', {
       hasToken: !!process.env.NOTION_TOKEN,
-      tokenPrefix: process.env.NOTION_TOKEN ? process.env.NOTION_TOKEN.substring(0, 10) + '...' : 'undefined'
+      tokenPrefix: process.env.NOTION_TOKEN ? process.env.NOTION_TOKEN.substring(0, 20) + '...' : 'undefined',
+      tokenLength: process.env.NOTION_TOKEN ? process.env.NOTION_TOKEN.length : 0,
+      allEnvVars: Object.keys(process.env).filter(key => key.includes('NOTION')),
+      fullToken: process.env.NOTION_TOKEN // デバッグ用
     });
     
     const { databaseId, filter } = JSON.parse(event.body);
