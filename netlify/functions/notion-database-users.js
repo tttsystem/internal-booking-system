@@ -33,11 +33,27 @@ exports.handler = async (event, context) => {
     // 全期間のレコードからユーザーを抽出
     const userMap = new Map();
     
+    console.log('レコード数:', data.results?.length || 0);
+    
     if (data.results) {
-      data.results.forEach(record => {
-        const userProp = record.properties['ユーザー'] || record.properties['担当'];
+      data.results.forEach((record, index) => {
+        console.log(`レコード ${index}:`, record.properties);
+        
+        // 複数のプロパティ名を試す
+        const possibleUserProps = ['ユーザー', '担当', 'User', 'Assigned', '責任者'];
+        let userProp = null;
+        
+        for (const propName of possibleUserProps) {
+          if (record.properties[propName]) {
+            userProp = record.properties[propName];
+            console.log(`Found user property: ${propName}`, userProp);
+            break;
+          }
+        }
+        
         if (userProp && userProp.people) {
           userProp.people.forEach(user => {
+            console.log('Found user:', user.name);
             if (!userMap.has(user.id)) {
               userMap.set(user.id, {
                 id: user.id,
