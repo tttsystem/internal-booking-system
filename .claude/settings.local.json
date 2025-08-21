@@ -12,7 +12,8 @@
       "Bash(npm install:*)",
       "Bash(netlify dev:*)",
       "Bash(node:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []
