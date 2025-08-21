@@ -6,14 +6,7 @@ exports.handler = async (event, context) => {
   try {
     const { databaseId } = JSON.parse(event.body);
     
-    // 今週の日付範囲を計算
-    const today = new Date();
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay() + 1); // 月曜日
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6); // 日曜日
-    
-    // 今週のレコードを取得
+    // 全期間のレコードを取得
     const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
       method: 'POST',
       headers: {
@@ -21,15 +14,7 @@ exports.handler = async (event, context) => {
         'Content-Type': 'application/json',
         'Notion-Version': '2022-06-28',
       },
-      body: JSON.stringify({
-        filter: {
-          property: '日付',
-          date: {
-            on_or_after: startOfWeek.toISOString().split('T')[0],
-            on_or_before: endOfWeek.toISOString().split('T')[0]
-          }
-        }
-      })
+      body: JSON.stringify({})
     });
 
     const data = await response.json();
@@ -45,7 +30,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // 今週のレコードからユーザーを抽出
+    // 全期間のレコードからユーザーを抽出
     const userMap = new Map();
     
     if (data.results) {
