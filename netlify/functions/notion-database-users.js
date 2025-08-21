@@ -33,37 +33,26 @@ exports.handler = async (event, context) => {
     // 全期間のレコードからユーザーを抽出
     const userMap = new Map();
     
-    console.log('レコード数:', data.results?.length || 0);
-    
     if (data.results) {
-      data.results.forEach((record, index) => {
-        console.log(`レコード ${index}:`, record.properties);
-        
-        // 複数のプロパティ名を試す
-        const possibleUserProps = ['ユーザー', '担当', 'User', 'Assigned', '責任者'];
-        let userProp = null;
+      data.results.forEach(record => {
+        // 複数のプロパティ名を試す（ユーザーが入力される可能性のある全プロパティ）
+        const possibleUserProps = ['ユーザー', '担当', 'User', 'Assigned', '責任者', '参加者', 'メンバー'];
         
         for (const propName of possibleUserProps) {
-          if (record.properties[propName]) {
-            userProp = record.properties[propName];
-            console.log(`Found user property: ${propName}`, userProp);
-            break;
+          const userProp = record.properties[propName];
+          if (userProp && userProp.people) {
+            userProp.people.forEach(user => {
+              if (!userMap.has(user.id)) {
+                userMap.set(user.id, {
+                  id: user.id,
+                  name: user.name,
+                  avatar_url: user.avatar_url,
+                  type: user.type,
+                  person: user.person
+                });
+              }
+            });
           }
-        }
-        
-        if (userProp && userProp.people) {
-          userProp.people.forEach(user => {
-            console.log('Found user:', user.name);
-            if (!userMap.has(user.id)) {
-              userMap.set(user.id, {
-                id: user.id,
-                name: user.name,
-                avatar_url: user.avatar_url,
-                type: user.type,
-                person: user.person
-              });
-            }
-          });
         }
       });
     }
