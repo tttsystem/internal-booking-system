@@ -4,147 +4,70 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { databaseId, viewId } = JSON.parse(event.body);
+    const { databaseId } = JSON.parse(event.body);
     
-    console.log('Database ID:', databaseId);
-    console.log('View ID:', viewId);
+    // 今週の日付範囲を計算
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay() + 1); // 月曜日
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6); // 日曜日
     
-    // データベースの情報を取得してユーザープロパティから参加者を抽出
-    const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}`, {
-      method: 'GET',
+    // 今週のレコードを取得
+    const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.NOTION_TOKEN}`,
         'Content-Type': 'application/json',
         'Notion-Version': '2022-06-28',
-      }
+      },
+      body: JSON.stringify({
+        filter: {
+          property: '日付',
+          date: {
+            on_or_after: startOfWeek.toISOString().split('T')[0],
+            on_or_before: endOfWeek.toISOString().split('T')[0]
+          }
+        }
+      })
     });
 
-    const dbData = await response.json();
+    const data = await response.json();
     
-    if (dbData.object === 'error') {
+    if (data.object === 'error') {
       return {
         statusCode: 200,
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Headers': 'Content-Type',
         },
-        body: JSON.stringify(dbData)
+        body: JSON.stringify(data)
       };
     }
-    
-    // レコードからユーザーIDを取得し、ワークスペースAPIで詳細を補完
-    const recordUserIds = new Set();
+
+    // 今週のレコードからユーザーを抽出
     const userMap = new Map();
     
-    // まずワークスペースの全ユーザー情報を取得
-    const usersResponse = await fetch('https://api.notion.com/v1/users', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${process.env.NOTION_TOKEN}`,
-        'Content-Type': 'application/json',
-        'Notion-Version': '2022-06-28',
-      }
-    });
-    
-    const usersData = await usersResponse.json();
-    const allWorkspaceUsers = new Map();
-    
-    if (usersData.results) {
-      usersData.results.forEach(user => {
-        if (user.type === 'person') {
-          allWorkspaceUsers.set(user.id, {
-            id: user.id,
-            name: user.name,
-            avatar_url: user.avatar_url,
-            type: user.type,
-            person: user.person
+    if (data.results) {
+      data.results.forEach(record => {
+        const userProp = record.properties['ユーザー'] || record.properties['担当'];
+        if (userProp && userProp.people) {
+          userProp.people.forEach(user => {
+            if (!userMap.has(user.id)) {
+              userMap.set(user.id, {
+                id: user.id,
+                name: user.name,
+                avatar_url: user.avatar_url,
+                type: user.type,
+                person: user.person
+              });
+            }
           });
         }
       });
     }
-
-    // 全期間のレコードを取得
-    let allRecords = [];
-    let hasMore = true;
-    let nextCursor = undefined;
-    
-    // 全レコードを取得
-    while (hasMore) {
-      const queryBody = {
-        page_size: 100
-      };
-      if (nextCursor) {
-        queryBody.start_cursor = nextCursor;
-      }
-      
-      const queryResponse = await fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.NOTION_TOKEN}`,
-          'Content-Type': 'application/json',
-          'Notion-Version': '2022-06-28',
-        },
-        body: JSON.stringify(queryBody)
-      });
-
-      const queryData = await queryResponse.json();
-      
-      if (queryData.object === 'error') {
-        break;
-      }
-      
-      if (queryData.results) {
-        allRecords = allRecords.concat(queryData.results);
-      }
-      
-      hasMore = queryData.has_more;
-      nextCursor = queryData.next_cursor;
-    }
-    
-    // データベースのレコードからもユーザーを抽出(以前に作った人)
-    const debugInfo = {
-      totalRecords: allRecords.length,
-      foundProperties: new Set(),
-      allUserNames: [],
-      recordUsers: [],
-      workspaceUsers: Array.from(userMap.values()).map(u => u.name),
-      sampleRecords: allRecords.slice(0, 3).map(r => ({
-        id: r.id,
-        properties: Object.keys(r.properties)
-      }))
-    };
-    
-    allRecords.forEach((record, recordIndex) => {
-      // 複数のプロパティからユーザーを検索
-      const possibleUserProps = ['ユーザー', '担当', 'User', 'Assignee', 'People', 'メンバー', 'Member'];
-      
-      possibleUserProps.forEach(propName => {
-        const userProp = record.properties[propName];
-        if (userProp) {
-          debugInfo.foundProperties.add(`${propName} (${userProp.type})`);
-          
-          if (userProp.people) {
-            userProp.people.forEach(user => {
-              debugInfo.allUserNames.push(user.name);
-              debugInfo.recordUsers.push(user.name);
-              
-              // レコードにいるユーザーIDを記録
-              recordUserIds.add(user.id);
-              
-              // ワークスペースユーザー情報とマッチんグ
-              if (allWorkspaceUsers.has(user.id)) {
-                userMap.set(user.id, allWorkspaceUsers.get(user.id));
-              }
-            });
-          }
-        }
-      });
-    });
     
     const users = Array.from(userMap.values());
-    
-    console.log('Debug Info:', JSON.stringify(debugInfo, null, 2));
-    console.log('Found users:', users.map(u => u.name));
     
     return {
       statusCode: 200,
@@ -155,19 +78,7 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({
         object: 'list',
         results: users,
-        has_more: false,
-        total_records: allRecords.length,
-        total_users: users.length,
-        debug: {
-          foundProperties: Array.from(debugInfo.foundProperties),
-          allUserNames: debugInfo.allUserNames,
-          recordUsers: debugInfo.recordUsers,
-          workspaceUsers: Array.from(allWorkspaceUsers.values()).map(u => u.name),
-          recordUserIds: Array.from(recordUserIds),
-          sampleRecords: debugInfo.sampleRecords,
-          viewId: viewId,
-          dateRange: '全期間'
-        }
+        has_more: false
       })
     };
   } catch (error) {
