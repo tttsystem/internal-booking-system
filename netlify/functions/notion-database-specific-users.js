@@ -32,12 +32,12 @@ exports.handler = async (event, context) => {
     // 手動で特定のユーザーリストを定義（そのデータベースに関係する人のみ）
     // このリストは実際のデータベースURLから確認した参加者を基に作成
     const specificUsers = [
-      { id: 'user1', name: '奥野翔也' },
-      { id: 'user2', name: '橋岡七泉' },
-      { id: 'user3', name: '加藤' },
+      { id: 'user1', name: '橋岡' },
+      { id: 'user2', name: '加藤' },
+      { id: 'user3', name: '川合' },
       { id: 'user4', name: '山本' },
-      { id: 'user5', name: '江下' },
-      { id: 'user6', name: '社長' }
+      { id: 'user5', name: '酒匂' },
+      { id: 'user6', name: '北澤' }
     ];
 
     // ワークスペースの全ユーザーを取得
