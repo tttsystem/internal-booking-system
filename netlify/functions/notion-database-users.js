@@ -32,41 +32,15 @@ exports.handler = async (event, context) => {
       };
     }
     
-    // データベースのプロパティからユーザー情報を取得
+    // 今週のレコードからのみユーザーを取得
     const userMap = new Map();
-    
-    // ワークスペースの全ユーザーを取得
-    const usersResponse = await fetch('https://api.notion.com/v1/users', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${process.env.NOTION_TOKEN}`,
-        'Content-Type': 'application/json',
-        'Notion-Version': '2022-06-28',
-      }
-    });
-    
-    const usersData = await usersResponse.json();
-    
-    if (usersData.results) {
-      usersData.results.forEach(user => {
-        if (user.type === 'person') {
-          userMap.set(user.id, {
-            id: user.id,
-            name: user.name,
-            avatar_url: user.avatar_url,
-            type: user.type,
-            person: user.person
-          });
-        }
-      });
-    }
 
-    // データベースから全レコードを取得してユーザー情報を収集
+    // 全期間のレコードを取得
     let allRecords = [];
     let hasMore = true;
     let nextCursor = undefined;
     
-    // ページネーションで全レコードを取得
+    // 全レコードを取得
     while (hasMore) {
       const queryBody = {
         page_size: 100
@@ -162,7 +136,8 @@ exports.handler = async (event, context) => {
           recordUsers: debugInfo.recordUsers,
           workspaceUsers: debugInfo.workspaceUsers,
           sampleRecords: debugInfo.sampleRecords,
-          viewId: viewId
+          viewId: viewId,
+          dateRange: '全期間'
         }
       })
     };
